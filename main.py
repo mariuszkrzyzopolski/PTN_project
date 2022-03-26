@@ -1,19 +1,20 @@
 import os
 import sys
-from user_handler.db import DB
+from database.database import DB
+from users.users_service import login, list_users, delete_user, register
 
 
 def run():
     choice = sys.argv[1]
     db = DB(os.path.dirname(os.path.realpath(__file__)))
     if choice == "login":
-        db.login()
+        login(db.db_path)
         if sys.argv[2] == "list_users":
-            db.list_users(sys.argv)
+            list_users(db.db_path, sys.argv)
         elif sys.argv[2] == "delete_user":
-            db.delete_user(sys.argv[3])
+            delete_user(db.db_path, sys.argv[3])
     elif choice == "register":
-        db.register()
+        register(db.db_path)
     else:
         print("Podales nieprawidlowe dzialanie, sprobuj jeszcze raz")
         exit()
