@@ -1,18 +1,6 @@
 import getpass
-import csv
 
-
-def is_exist(db_path, username, password, check_password=False):
-    with open(db_path) as db:
-        file = csv.reader(db, delimiter=' ', quotechar='|')
-        for row in file:
-            if check_password:
-                if row[0] == username and row[1] == password:
-                    return True
-            else:
-                if row[0].lower() == username.lower():
-                    return True
-    return False
+from database.users_model import User
 
 
 def secure_password(password):
@@ -29,68 +17,69 @@ def secure_password(password):
     return True
 
 
-def login(db_path):
+def login(db):
     username = input("podaj nazwe uzytkownika: ")
     password = getpass.getpass(prompt="podaj haslo: ")
-    if is_exist(db_path, username, password, True):
+    user = User(username, password)
+    if user.is_exist(db, True):
         print("Witamy!")
     else:
         print("Niepoprawne dane, sprobuj jeszcze raz")
+    return username
 
 
-def register(db_path):
+def register(db):
     username = input("podaj nazwe uzytkownika: ")
     password = getpass.getpass(prompt="podaj haslo: ")
     second_password = getpass.getpass(prompt="powtorz wpisane haslo: ")
+    user = User(username, password)
     if password != second_password:
         print("Hasla sie nie zgadzaja")
-    elif is_exist(db_path, username, password):
-        print("Zajeta nazwa uzytkownika")
     elif not secure_password(password):
         print("Hasło nie jest bezpieczne, stwórz bezpieczne hasło")
+    elif user.is_exist(db):
+        print("Zajeta nazwa uzytkownika")
     else:
-        with open(db_path, "a", newline='') as db:
-            file = csv.writer(db, delimiter=' ', quotechar='|')
-            file.writerow([username, password])
+        file = db.write("user", "a")
+        file.writerow([username, user.password])
+        db.close()
 
 
-def list_users(db_path, mode):
+def list_users(db, mode):
     if mode[3] == "all":
-        with open(db_path) as db:
-            file = csv.reader(db, delimiter=' ', quotechar='|')
-            for row in file:
-                print(row[0])
+        file = db.read("user")
+        for row in file:
+            print(row[0])
+        db.close()
     elif mode[3] == "sort":
-        with open(db_path) as db:
-            file = csv.reader(db, delimiter=' ', quotechar='|')
-            users = []
-            for row in file:
-                users.append(row[0])
+        file = db.read("user")
+        users = []
+        for row in file:
+            users.append(row[0])
         users.sort()
         for user in users:
             print(user)
+        db.close()
     elif mode[3] == "by_letter":
-        with open(db_path) as db:
-            file = csv.reader(db, delimiter=' ', quotechar='|')
-            for row in file:
-                if row[0][0] == mode[4]:
-                    print(row[0])
+        file = db.read("user")
+        for row in file:
+            if row[0][0] == mode[4]:
+                print(row[0])
+        db.close()
     elif mode[3] == "contain":
-        with open(db_path) as db:
-            file = csv.reader(db, delimiter=' ', quotechar='|')
-            for row in file:
-                if mode[4] in row[0]:
-                    print(row[0])
+        file = db.read("user")
+        for row in file:
+            if mode[4] in row[0]:
+                print(row[0])
+        db.close()
 
 
-def delete_user(db_path, user):
+def delete_user(db, user):
     list_of_lines = list()
-    with open(db_path, 'r') as readFile:
-        reader = csv.reader(readFile, delimiter=' ', quotechar='|')
-        for row in reader:
-            list_of_lines.append(row)
-            if row[0] == user:
-                list_of_lines.remove(row)
-    with open(db_path, 'w') as writeFile:
-        writer = csv.writer(writeFile, delimiter=' ', quotechar='|')
-        writer.writerows(list_of_lines)
+    file = db.read("user")
+    for row in file:
+        list_of_lines.append(row)
+        if row[0] == user:
+            list_of_lines.remove(row)
+    file = db.write("user", "ww")
+    file.writerows(list_of_lines)
