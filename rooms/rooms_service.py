@@ -6,7 +6,7 @@ from database.rooms_model import Room
 
 
 def create_room(db, owner):
-    password = getpass.getpass(prompt="podaj haslo: ")
+    password = getpass.getpass(prompt="password: ")
     return Room(db, password, owner)
 
 
@@ -24,7 +24,7 @@ def delete_room(db, room_id, user):
 
 def join_room(db, room_id, user):
     list_of_lines = list()
-    password = getpass.getpass(prompt="podaj haslo: ")
+    password = getpass.getpass(prompt="password: ")
     file = db.read("room")
     for row in file:
         list_of_lines.append(row)
@@ -33,6 +33,6 @@ def join_room(db, room_id, user):
                 row[3] = row[3] + f"/{user}"
                 print(f"joined into {room_id} room")
             else:
-                print("Jesteś już w pokoju")
+                print("You're already in room")
     file = db.write("room", "w+")
     file.writerows(list_of_lines)

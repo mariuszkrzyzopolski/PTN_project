@@ -20,28 +20,28 @@ def secure_password(password):
 
 
 def login(db):
-    username = input("podaj nazwe uzytkownika: ")
-    password = getpass.getpass(prompt="podaj haslo: ")
+    username = input("username: ")
+    password = getpass.getpass(prompt="password: ")
     user = User(username, bytes(password, 'utf-8'))
     if user.is_exist(db, True):
-        print("Witamy!")
+        print(f"Welcome {username}!")
         return username
     else:
-        print("Niepoprawne dane, sprobuj jeszcze raz")
+        print("Wrong username or password")
         return login(db)
 
 
 def register(db):
-    username = input("podaj nazwe uzytkownika: ")
-    password = getpass.getpass(prompt="podaj haslo: ")
-    second_password = getpass.getpass(prompt="powtorz wpisane haslo: ")
+    username = input("username: ")
+    password = getpass.getpass(prompt="password: ")
+    second_password = getpass.getpass(prompt="repeat password: ")
     user = User(username, bcrypt.hashpw(bytes(password, 'utf-8'), bcrypt.gensalt()))
     if password != second_password:
-        print("Hasla sie nie zgadzaja")
+        print("Passwords are different")
     elif not secure_password(password):
-        print("Hasło nie jest bezpieczne, stwórz bezpieczne hasło")
+        print("Password is not secure again, try more complex password")
     elif user.is_exist(db):
-        print("Zajeta nazwa uzytkownika")
+        print("user already exists")
     else:
         file = db.write("user", "a")
         file.writerow([username, user.password.decode()])

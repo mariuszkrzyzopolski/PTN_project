@@ -1,5 +1,6 @@
 import os
 import sys
+
 from database.database import DB
 from rooms.rooms_service import create_room, delete_room, join_room
 from users.users_service import login, list_users, delete_user, register
@@ -23,7 +24,7 @@ def run():
     elif choice == "register":
         register(db)
     else:
-        print("Podales nieprawidlowe dzialanie, sprobuj jeszcze raz")
+        print("Wrong input, try again")
         exit()
 
 
