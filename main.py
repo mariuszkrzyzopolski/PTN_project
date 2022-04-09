@@ -1,7 +1,7 @@
 import os
 import sys
 from database.database import DB
-from rooms.rooms_service import create_room
+from rooms.rooms_service import create_room, delete_room, join_room
 from users.users_service import login, list_users, delete_user, register
 
 
@@ -16,6 +16,10 @@ def run():
             delete_user(db, sys.argv[3])
         elif sys.argv[2] == "create_room":
             create_room(db, username)
+        elif sys.argv[2] == "delete_room":
+            delete_room(db, sys.argv[3], username)
+        elif sys.argv[2] == "join_room":
+            join_room(db, sys.argv[3], username)
     elif choice == "register":
         register(db)
     else:

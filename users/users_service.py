@@ -1,5 +1,7 @@
 import getpass
 
+import bcrypt
+
 from database.users_model import User
 
 
@@ -20,19 +22,20 @@ def secure_password(password):
 def login(db):
     username = input("podaj nazwe uzytkownika: ")
     password = getpass.getpass(prompt="podaj haslo: ")
-    user = User(username, password)
+    user = User(username, bytes(password, 'utf-8'))
     if user.is_exist(db, True):
         print("Witamy!")
+        return username
     else:
         print("Niepoprawne dane, sprobuj jeszcze raz")
-    return username
+        return login(db)
 
 
 def register(db):
     username = input("podaj nazwe uzytkownika: ")
     password = getpass.getpass(prompt="podaj haslo: ")
     second_password = getpass.getpass(prompt="powtorz wpisane haslo: ")
-    user = User(username, password)
+    user = User(username, bcrypt.hashpw(bytes(password, 'utf-8'), bcrypt.gensalt()))
     if password != second_password:
         print("Hasla sie nie zgadzaja")
     elif not secure_password(password):
@@ -41,7 +44,7 @@ def register(db):
         print("Zajeta nazwa uzytkownika")
     else:
         file = db.write("user", "a")
-        file.writerow([username, user.password])
+        file.writerow([username, user.password.decode()])
         db.close()
 
 
@@ -81,5 +84,5 @@ def delete_user(db, user):
         list_of_lines.append(row)
         if row[0] == user:
             list_of_lines.remove(row)
-    file = db.write("user", "ww")
+    file = db.write("user", "w+")
     file.writerows(list_of_lines)

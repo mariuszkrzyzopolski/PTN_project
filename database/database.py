@@ -6,12 +6,12 @@ class DB:
     def __init__(self, current_dir):
         self.db_user_path = os.path.join(current_dir, "db_user.csv")
         if not os.path.exists(self.db_user_path):
-            self.current_file = open(self.db_user_path)
+            self.current_file = open(self.db_user_path, 'w+')
             self.current_file.close()
 
         self.db_room_path = os.path.join(current_dir, "db_room.csv")
         if not os.path.exists(self.db_room_path):
-            self.current_file = open('db_room.csv', 'w+')
+            self.current_file = open(self.db_room_path, 'w+')
             self.current_file.close()
 
     def read(self, table):
