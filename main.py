@@ -1,14 +1,14 @@
-import os
 import sys
 
-from database.database import DB
+from database.database import DB, get_database
 from rooms.rooms_service import create_room, delete_room, join_room
 from users.users_service import login, list_users, delete_user, register
 
 
 def run():
     choice = sys.argv[1]
-    db = DB(os.path.dirname(os.path.realpath(__file__)))
+    conn = get_database()
+    db = DB(conn)
     if choice == "login":
         username = login(db)
         if sys.argv[2] == "list_users":

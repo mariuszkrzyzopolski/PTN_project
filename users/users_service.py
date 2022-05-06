@@ -23,7 +23,7 @@ def login(db):
     username = input("username: ")
     password = getpass.getpass(prompt="password: ")
     user = User(username, bytes(password, 'utf-8'))
-    if user.is_exist(db, True):
+    if is_exist(user.username, user.password, db, True):
         print(f"Welcome {username}!")
         return username
     else:
@@ -40,49 +40,46 @@ def register(db):
         print("Passwords are different")
     elif not secure_password(password):
         print("Password is not secure again, try more complex password")
-    elif user.is_exist(db):
+    elif is_exist(user.username, user.password, db):
         print("user already exists")
     else:
-        file = db.write("user", "a")
-        file.writerow([username, user.password.decode()])
-        db.close()
+        db.cursor.execute(f"INSERT INTO USER VALUES ('{username}' , '{user.password.decode()}')")
+    db.close()
 
 
 def list_users(db, mode):
     if mode[3] == "all":
-        file = db.read("user")
-        for row in file:
-            print(row[0])
+        db.cursor.execute(f"SELECT username FROM USER")
+        data = db.cursor.fetchall()
+        for record in data:
+            print(record)
         db.close()
     elif mode[3] == "sort":
-        file = db.read("user")
-        users = []
-        for row in file:
-            users.append(row[0])
-        users.sort()
-        for user in users:
-            print(user)
-        db.close()
-    elif mode[3] == "by_letter":
-        file = db.read("user")
-        for row in file:
-            if row[0][0] == mode[4]:
-                print(row[0])
+        db.cursor.execute(f"SELECT username FROM USER ORDER BY username")
+        data = db.cursor.fetchall()
+        for record in data:
+            print(record)
         db.close()
     elif mode[3] == "contain":
-        file = db.read("user")
-        for row in file:
-            if mode[4] in row[0]:
-                print(row[0])
+        db.cursor.execute(f"SELECT username FROM WHERE username LIKE '%{mode[4]}%'")
+        data = db.cursor.fetchall()
+        for record in data:
+            print(record)
         db.close()
 
 
 def delete_user(db, user):
-    list_of_lines = list()
-    file = db.read("user")
-    for row in file:
-        list_of_lines.append(row)
-        if row[0] == user:
-            list_of_lines.remove(row)
-    file = db.write("user", "w+")
-    file.writerows(list_of_lines)
+    db.cursor.execute(f"DELETE FROM USER WHERE username = '{user}'")
+    db.close()
+
+
+def is_exist(username, password, db, check_password=False):
+    db.cursor.execute(f"SELECT username,password FROM USER WHERE username = '{username}'")
+    data = db.cursor.fetchall()
+    if len(data) != 0:
+        if check_password:
+            if bcrypt.checkpw(password, bytes(data[1], 'utf-8')):
+                return True
+        else:
+            return True
+    return False
