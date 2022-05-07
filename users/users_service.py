@@ -1,5 +1,3 @@
-import getpass
-
 import bcrypt
 
 from database.users_model import User
@@ -19,48 +17,41 @@ def secure_password(password):
     return True
 
 
-def login(db):
-    username = input("username: ")
-    password = getpass.getpass(prompt="password: ")
+def login(db, username, password):
     user = User(username, bytes(password, 'utf-8'))
     if is_exist(user.username, user.password, db, True):
         print(f"Welcome {username}!")
-        return username
+        return user
     else:
         print("Wrong username or password")
-        return login(db)
+        exit()
 
 
-def register(db):
-    username = input("username: ")
-    password = getpass.getpass(prompt="password: ")
-    second_password = getpass.getpass(prompt="repeat password: ")
+def register(db, username, password):
     user = User(username, bcrypt.hashpw(bytes(password, 'utf-8'), bcrypt.gensalt()))
-    if password != second_password:
-        print("Passwords are different")
-    elif not secure_password(password):
+    if not secure_password(password):
         print("Password is not secure again, try more complex password")
     elif is_exist(user.username, user.password, db):
         print("user already exists")
     else:
-        db.cursor.execute(f"INSERT INTO USER VALUES ('{username}' , '{user.password.decode()}')")
+        db.cursor.execute(f"INSERT INTO USER (username, password) VALUES ('{username}' , '{user.password.decode()}')")
     db.close()
 
 
 def list_users(db, mode):
-    if mode[3] == "all":
+    if mode == "all":
         db.cursor.execute(f"SELECT username FROM USER")
         data = db.cursor.fetchall()
         for record in data:
             print(record)
         db.close()
-    elif mode[3] == "sort":
+    elif mode == "sort":
         db.cursor.execute(f"SELECT username FROM USER ORDER BY username")
         data = db.cursor.fetchall()
         for record in data:
             print(record)
         db.close()
-    elif mode[3] == "contain":
+    elif mode == "contain":
         db.cursor.execute(f"SELECT username FROM WHERE username LIKE '%{mode[4]}%'")
         data = db.cursor.fetchall()
         for record in data:
@@ -70,6 +61,7 @@ def list_users(db, mode):
 
 def delete_user(db, user):
     db.cursor.execute(f"DELETE FROM USER WHERE username = '{user}'")
+    print(f"user {user} deleted")
     db.close()
 
 
@@ -78,7 +70,7 @@ def is_exist(username, password, db, check_password=False):
     data = db.cursor.fetchall()
     if len(data) != 0:
         if check_password:
-            if bcrypt.checkpw(password, bytes(data[1], 'utf-8')):
+            if bcrypt.checkpw(password, bytes(data[0][1], 'utf-8')):
                 return True
         else:
             return True
