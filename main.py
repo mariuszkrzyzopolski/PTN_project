@@ -51,7 +51,7 @@ def remove_user(obj):
 
 
 @user.group("room")
-@click.option("--room_id", required=True)
+@click.option("--room_id")
 @click.password_option()
 @click.pass_obj
 def room(obj, room_id, password):
@@ -87,8 +87,8 @@ def set_room_topic(obj, topic_text):
 @room.command("vote")
 @click.option("--value", required=True)
 @click.pass_obj
-def set_room_topic(obj, value):
-    vote_for_topic(obj["db"], obj["room_id"], obj["room_password"], value)
+def vote_room(obj, value):
+    vote_for_topic(obj["db"], obj["room_id"], obj["room_password"], value, obj["user"].username)
 
 
 if __name__ == '__main__':

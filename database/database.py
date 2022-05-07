@@ -20,14 +20,14 @@ class DB:
             os.remove("db_user.csv")
             os.remove("db_room.csv")
         self.cursor.execute('''
-            CREATE TABLE if not exists user (
+            CREATE TABLE user (
                 user_id integer PRIMARY KEY AUTOINCREMENT,
                 username text NOT NULL UNIQUE,
                 password text NOT NULL
             )
         ''')
         self.cursor.execute('''
-            CREATE TABLE if not exists room (
+            CREATE TABLE room (
                 room_id integer PRIMARY KEY AUTOINCREMENT,
                 password text NOT NULL,
                 owner text NOT NULL,

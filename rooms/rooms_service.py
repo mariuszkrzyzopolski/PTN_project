@@ -52,16 +52,20 @@ def set_topic(db, room_id, room_password, topic):
     db.close()
 
 
-def vote_for_topic(db, room_id, room_password, vote):
+def vote_for_topic(db, room_id, room_password, vote, user):
     is_logged = login_into_room(db, room_password, room_id)
     if is_logged[0]:
-        db.cursor.execute(f"SELECT votes FROM ROOM WHERE room_id = '{room_id}'")
-        data = db.cursor.fetchall()
-        db.cursor.execute('UPDATE ROOM SET votes=? WHERE room_id=?', (f"{data[0][0]}/{vote}", room_id))
-        db.conn.commit()
-        db.cursor.execute(f"SELECT votes FROM ROOM WHERE room_id = '{room_id}'")
-        data = db.cursor.fetchall()
-        print(f"Actual votes {data[0][0]}")
+        data = is_logged[1]
+        if user in data[0][0].split("/"):
+            db.cursor.execute(f"SELECT votes FROM ROOM WHERE room_id = '{room_id}'")
+            data = db.cursor.fetchall()
+            db.cursor.execute('UPDATE ROOM SET votes=? WHERE room_id=?', (f"{data[0][0]}/{vote}", room_id))
+            db.conn.commit()
+            db.cursor.execute(f"SELECT votes FROM ROOM WHERE room_id = '{room_id}'")
+            data = db.cursor.fetchall()
+            print(f"Actual votes {data[0][0]}")
+        else:
+            print("You are not in the target room")
     else:
         print("wrong password")
     db.close()
