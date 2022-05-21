@@ -2,6 +2,7 @@ import click
 
 from database.database import DB, get_database
 from rooms.rooms_service import create_room, delete_room, join_room, set_topic, vote_for_topic
+from server import run_server
 from users.users_service import login, list_users, delete_user, register
 
 
@@ -18,6 +19,12 @@ def run(ctx):
 @click.pass_obj
 def clear_db(obj):
     obj["db"].initialize_db()
+
+
+@run.command("run_as_server")
+@click.pass_obj
+def run_as_server(obj):
+    run_server()
 
 
 @run.group("user")

@@ -6,17 +6,15 @@ from database.rooms_model import Room
 def create_room(db, password, owner):
     room = Room(password, owner)
     db.cursor.execute(
-        f"INSERT INTO ROOM (owner, password, users, topic, votes) VALUES ('{room.owner}', '{room.password.decode()}', '{room.users}',"
-        f" '{room.topic}', '{room.votes}')")
+        f"INSERT INTO ROOM (owner, password, users, topic, votes) VALUES ('{room.owner}', '{room.password.decode()}',"
+        f" '{room.users}', '{room.topic}', '{room.votes}')")
     db.cursor.execute("SELECT last_insert_rowid()")
     print(f"New room id: {db.cursor.fetchall()[0][0]}")
-    db.close()
 
 
 def delete_room(db, room_id, user):
     db.cursor.execute(f"DELETE FROM ROOM WHERE owner = '{user}' AND room_id = {room_id}")
     print(f"room {room_id} deleted")
-    db.close()
 
 
 def login_into_room(db, password, room_id):
@@ -39,7 +37,6 @@ def join_room(db, room_id, room_password, user):
             print("You're already in room")
     else:
         print("wrong password")
-    db.close()
 
 
 def set_topic(db, room_id, room_password, topic):
@@ -49,7 +46,6 @@ def set_topic(db, room_id, room_password, topic):
         print(f"Topic is {topic} now")
     else:
         print("wrong password")
-    db.close()
 
 
 def vote_for_topic(db, room_id, room_password, vote, user):
@@ -68,4 +64,3 @@ def vote_for_topic(db, room_id, room_password, vote, user):
             print("You are not in the target room")
     else:
         print("wrong password")
-    db.close()

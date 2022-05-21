@@ -1,6 +1,7 @@
 import bcrypt
 
 from database.users_model import User
+from errors import WrongInputException, ExistingUserException, PasswordComplexException
 
 
 def secure_password(password):
@@ -23,19 +24,17 @@ def login(db, username, password):
         print(f"Welcome {username}!")
         return user
     else:
-        print("Wrong username or password")
-        exit()
+        raise WrongInputException("Wrong login/password")
 
 
 def register(db, username, password):
     user = User(username, bcrypt.hashpw(bytes(password, 'utf-8'), bcrypt.gensalt()))
     if not secure_password(password):
-        print("Password is not secure again, try more complex password")
+        raise PasswordComplexException("Password must be more secure")
     elif is_exist(user.username, user.password, db):
-        print("user already exists")
+        raise ExistingUserException("User already exist")
     else:
         db.cursor.execute(f"INSERT INTO USER (username, password) VALUES ('{username}' , '{user.password.decode()}')")
-    db.close()
 
 
 def list_users(db, mode):
@@ -44,25 +43,23 @@ def list_users(db, mode):
         data = db.cursor.fetchall()
         for record in data:
             print(record)
-        db.close()
+
     elif mode == "sort":
         db.cursor.execute(f"SELECT username FROM USER ORDER BY username")
         data = db.cursor.fetchall()
         for record in data:
             print(record)
-        db.close()
+
     elif mode == "contain":
         db.cursor.execute(f"SELECT username FROM WHERE username LIKE '%{mode[4]}%'")
         data = db.cursor.fetchall()
         for record in data:
             print(record)
-        db.close()
 
 
 def delete_user(db, user):
     db.cursor.execute(f"DELETE FROM USER WHERE username = '{user}'")
     print(f"user {user} deleted")
-    db.close()
 
 
 def is_exist(username, password, db, check_password=False):
