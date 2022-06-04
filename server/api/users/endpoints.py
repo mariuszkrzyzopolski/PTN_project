@@ -1,13 +1,13 @@
 import datetime
 
 import jwt
-from starlette.authentication import requires, AuthenticationError, AuthenticationBackend, AuthCredentials
+from starlette.authentication import requires, AuthenticationError, AuthenticationBackend, AuthCredentials, SimpleUser
 from starlette.endpoints import HTTPEndpoint
 from starlette.responses import HTMLResponse, JSONResponse
 
 from database.database import get_database, DB
 from errors import WrongInputException, ExistingUserException, PasswordComplexException
-from users.users_service import login, register
+from users.users_service import login, register, list_users
 
 conn = get_database()
 database = DB(conn)
@@ -17,16 +17,12 @@ class BasicAuthBackend(AuthenticationBackend):
     async def authenticate(self, conn):
         if "authorization" not in conn.headers:
             return None
-        auth = conn.headers["authorization"]
-        try:
-            scheme, token = auth.split()
-        except (ValueError, UnicodeDecodeError):
-            raise AuthenticationError('Invalid basic auth credentials')
+        token = conn.headers["authorization"]
         try:
             payload = jwt.decode(token, "secret", algorithms="HS256", options={"require": ["exp", "sub"]})
         except jwt.InvalidTokenError:
             raise AuthenticationError('Invalid token')
-        return AuthCredentials(["authenticated"]), payload["sub"]
+        return AuthCredentials(["authenticated"]), SimpleUser(payload["sub"])
 
 
 class Login(HTTPEndpoint):
@@ -74,3 +70,13 @@ class Refresh(HTTPEndpoint):
         except AuthenticationError:
             return HTMLResponse(status_code=403, content='Invalid token')
         return JSONResponse({"token": jwt_payload})
+
+
+class List(HTTPEndpoint):
+    @requires('authenticated')
+    async def get(self, request):
+        filter = request.query_params.get('filter')
+        if filter is None:
+            filter = "all"
+        users = list_users(database, filter)
+        return JSONResponse(users)

@@ -41,20 +41,32 @@ def list_users(db, mode):
     if mode == "all":
         db.cursor.execute(f"SELECT username FROM USER")
         data = db.cursor.fetchall()
+        result = []
         for record in data:
-            print(record)
+            json_record = {"username": record[0]}
+            result.append(json_record)
+            print(json_record)
+        return result
 
     elif mode == "sort":
         db.cursor.execute(f"SELECT username FROM USER ORDER BY username")
         data = db.cursor.fetchall()
+        result = []
         for record in data:
-            print(record)
+            json_record = {"username": record[0]}
+            result.append(json_record)
+            print(json_record)
+        return result
 
     elif mode == "contain":
         db.cursor.execute(f"SELECT username FROM WHERE username LIKE '%{mode[4]}%'")
         data = db.cursor.fetchall()
+        result = []
         for record in data:
-            print(record)
+            json_record = {"username": record[0]}
+            result.append(json_record)
+            print(json_record)
+        return result
 
 
 def delete_user(db, user):
