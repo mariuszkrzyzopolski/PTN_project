@@ -45,7 +45,6 @@ def list_users(db, mode):
         for record in data:
             json_record = {"username": record[0]}
             result.append(json_record)
-            print(json_record)
         return result
 
     elif mode == "sort":
@@ -55,7 +54,6 @@ def list_users(db, mode):
         for record in data:
             json_record = {"username": record[0]}
             result.append(json_record)
-            print(json_record)
         return result
 
     elif mode == "contain":
@@ -65,7 +63,6 @@ def list_users(db, mode):
         for record in data:
             json_record = {"username": record[0]}
             result.append(json_record)
-            print(json_record)
         return result
 
 

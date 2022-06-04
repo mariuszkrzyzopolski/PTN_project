@@ -2,6 +2,8 @@ import uvicorn
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
+from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.routing import Mount
 
 from .api import routes
@@ -12,8 +14,11 @@ routes = [
 ]
 
 middleware = [
-    Middleware(AuthenticationMiddleware, backend=BasicAuthBackend())
+    Middleware(AuthenticationMiddleware, backend=BasicAuthBackend()),
+    Middleware(TrustedHostMiddleware, allowed_hosts=['*']),
+    Middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*']),
 ]
+app = Starlette(True, routes, middleware=middleware)
 
 app = Starlette(debug=True, routes=routes, middleware=middleware)
 

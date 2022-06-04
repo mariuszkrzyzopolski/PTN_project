@@ -17,7 +17,11 @@ class BasicAuthBackend(AuthenticationBackend):
     async def authenticate(self, conn):
         if "authorization" not in conn.headers:
             return None
-        token = conn.headers["authorization"]
+        auth = conn.headers["authorization"]
+        try:
+            scheme, token = auth.split()
+        except (ValueError, UnicodeDecodeError):
+            raise AuthenticationError('Invalid basic auth credentials')
         try:
             payload = jwt.decode(token, "secret", algorithms="HS256", options={"require": ["exp", "sub"]})
         except jwt.InvalidTokenError:
@@ -64,7 +68,7 @@ class Refresh(HTTPEndpoint):
         try:
             jwt_payload = jwt.encode(
                 {"exp": datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(minutes=15),
-                 "sub": request.user},
+                 "sub": request.user.display_name},
                 "secret"
             )
         except AuthenticationError:
