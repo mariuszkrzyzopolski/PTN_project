@@ -1,7 +1,7 @@
 import click
 
 from database.database import DB, get_database
-from rooms.rooms_service import create_room, delete_room, join_room, set_topic, vote_for_topic
+from rooms.rooms_service import create_room, delete_room, join_room, set_topic, vote_for_topic, joined_rooms
 from server import run_server
 from users.users_service import login, list_users, delete_user, register
 
@@ -48,7 +48,13 @@ def register_user(obj, username, password):
 @click.option("--mode", required=True)
 @click.pass_obj
 def list_exist(obj, mode):
-    list_users(obj["db"], mode)
+    print(list_users(obj["db"], mode))
+
+
+@user.command("joined_rooms")
+@click.pass_obj
+def get_joined_rooms(obj):
+    joined_rooms(obj["db"], obj["user"].username)
 
 
 @user.command("remove")
@@ -67,9 +73,10 @@ def room(obj, room_id, password):
 
 
 @room.command("create")
+@click.option("--name", required=True)
 @click.pass_obj
-def create_new_room(obj):
-    create_room(obj["db"], obj["room_password"], obj["user"].username)
+def create_new_room(obj, name):
+    create_room(obj["db"], obj["room_password"], obj["user"].username, name)
 
 
 @room.command("delete")

@@ -1,15 +1,18 @@
 import os
-import sqlite3
+
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
 
 
 def get_database():
-    return sqlite3.connect('sql.db')
+    return create_engine('sqlite:///sql.db')
 
 
 class DB:
     def __init__(self, conn):
         self.conn = conn
-        self.cursor = conn.cursor()
 
     def close(self):
         self.conn.commit()
@@ -19,21 +22,5 @@ class DB:
         if os.path.exists("db_user.csv") or os.path.exists("db_room.csv"):
             os.remove("db_user.csv")
             os.remove("db_room.csv")
-        self.cursor.execute('''
-            CREATE TABLE user (
-                user_id integer PRIMARY KEY AUTOINCREMENT,
-                username text NOT NULL UNIQUE,
-                password text NOT NULL
-            )
-        ''')
-        self.cursor.execute('''
-            CREATE TABLE room (
-                room_id integer PRIMARY KEY AUTOINCREMENT,
-                password text NOT NULL,
-                owner text NOT NULL,
-                topic text NOT NULL,
-                users text NOT NULL,
-                votes text NOT NULL
-            )
-        ''')
-        self.conn.commit()
+        Base.metadata.drop_all(self.conn)
+        Base.metadata.create_all(self.conn)

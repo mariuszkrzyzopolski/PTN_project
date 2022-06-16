@@ -1,48 +1,61 @@
 import bcrypt
+from sqlalchemy import select, insert
+from sqlalchemy.orm import Session
 
 from database.rooms_model import Room
+from database.users_model import User
+from database.vote_model import Vote
 
 
 def create_room(db, password, owner, name):
-    room = Room(password, owner, name)
-    db.cursor.execute(
-        f"INSERT INTO ROOM (owner, password, users, topic, votes) VALUES ('{room.owner}', '{room.password.decode()}',"
-        f" '{room.users}', '{room.topic}', '{room.votes}')")
-    db.conn.commit()
-    db.cursor.execute("SELECT last_insert_rowid()")
-    print(f"New room id: {db.cursor.fetchall()[0][0]}")
+    with Session(db.conn) as session:
+        hash_password = bcrypt.hashpw(bytes(password, 'utf-8'), bcrypt.gensalt())
+        q = select(User).filter_by(username=owner)
+        user = session.execute(q).first()
+        session.add(Room(name=name, owner=owner, password=hash_password, topic="", users=[user[0]]))
+        session.commit()
+        print("New room create")
 
 
 def is_owner(db, room_id, user):
-    db.cursor.execute(f"SELECT room_id from room WHERE owner = '{user}' AND room_id = '{room_id}'")
-    return len(db.cursor.fetchall()) != 0
+    with Session(db.conn) as session:
+        q = select(Room).filter_by(id=room_id, owner=user)
+        room = session.execute(q).all()
+        return room[0]
 
 
 def joined_rooms(db, user):
     result_rooms = []
-    db.cursor.execute(f"SELECT topic, room_id, owner from room WHERE owner LIKE '%{user}%'")
-    rooms = db.cursor.fetchall()
-    for room in rooms:
-        result_rooms.append({"name": room[0], "id": room[1], "owner": room[2]})
+    with Session(db.conn) as session:
+        q = select(Room).join(User.rooms).where(User.username == user)
+        rooms = session.execute(q).all()
+        for room in rooms:
+            result_rooms.append({"name": room[0].name, "id": room[0].id, "owner": room[0].owner})
     return result_rooms
 
 
 def delete_room(db, room_id, user):
-    db.cursor.execute(f"DELETE FROM ROOM WHERE owner = '{user}' AND room_id = {room_id}")
-    db.conn.commit()
-    print(f"room {room_id} deleted")
+    with Session(db.conn) as session:
+        q = select(User.id).filter_by(username=user)
+        user = session.execute(q).first()
+        q = select(Room).filter_by(owner=user[0], id=room_id)
+        data = session.execute(q).first()
+        session.delete(data[0])
+        session.commit()
+        print(f"room {room_id} deleted")
 
 
 def get_users_from_room(db, room_id):
-    db.cursor.execute(f"SELECT users, password FROM ROOM WHERE room_id = '{room_id}'")
-    data = db.cursor.fetchall()
-    return data
+    with Session(db.conn) as session:
+        q = select(User).join(Room.users).where(Room.id == room_id)
+        data = session.execute(q).all()
+        return data
 
 
 def login_into_room(db, password, room_id):
-    data = get_users_from_room(db, room_id)
-    if len(data) != 0:
-        if bcrypt.checkpw(bytes(password, 'utf-8'), bytes(data[0][1], 'utf-8')):
+    user = get_users_from_room(db, room_id)
+    if user:
+        if bcrypt.checkpw(bytes(password, 'utf-8'), user[0][0].password):
             return True
     return False
 
@@ -50,10 +63,15 @@ def login_into_room(db, password, room_id):
 def join_room(db, room_id, room_password, user):
     is_logged = login_into_room(db, room_password, room_id)
     if is_logged:
-        data = get_users_from_room(db, room_id)
-        if user not in data[0][0].split("/"):
-            db.cursor.execute('UPDATE ROOM SET users=? WHERE room_id=?', (f"{data[0][0]}/{user}", room_id))
-            db.conn.commit()
+        users = get_users_from_room(db, room_id)
+        if user not in users[0]:
+            with Session(db.conn) as session:
+                q = select(Room).filter_by(id=room_id)
+                data = session.execute(q).first()
+                q = select(User).filter_by(username=user)
+                user = session.execute(q).first()
+                data[0].users.append(user[0])
+                session.commit()
             print(f"joined into {room_id} room")
         else:
             print("You're already in room")
@@ -61,42 +79,51 @@ def join_room(db, room_id, room_password, user):
         print("wrong password")
 
 
-# TODO change room password and return full room object
 def set_topic(db, room_id, topic, user):
     if is_owner(db, room_id, user):
-        db.cursor.execute('UPDATE ROOM SET topic=?, votes=? WHERE room_id=?', (topic, "", room_id))
-        print(f"Topic is {topic} now")
-        db.conn.commit()
-        return {"id": room_id, "topic": topic}
+        with Session(db.conn) as session:
+            session.query(Room).filter(Room.id == room_id).update({"topic": topic})
+            session.query(Vote).filter(Vote.room_id == room_id).delete()
+            print(f"Topic is {topic} now")
+            session.commit()
+            return {"id": room_id, "topic": topic}
     else:
-        print("wrong password")
+        print("Not Owner!")
 
 
 def vote_for_topic(db, room_id, vote, user):
     data = get_users_from_room(db, room_id)
-    if user in data[0][0].split("/"):
-        db.cursor.execute(f"SELECT votes FROM ROOM WHERE room_id = '{room_id}'")
-        data = db.cursor.fetchall()
-        db.cursor.execute('UPDATE ROOM SET votes=? WHERE room_id=?', (f"{data[0][0]}/{vote}", room_id))
-        db.conn.commit()
-        db.cursor.execute(f"SELECT votes FROM ROOM WHERE room_id = '{room_id}'")
-        data = db.cursor.fetchall()
-        print(f"Actual votes {data[0][0]}")
+    if data:
+        with Session(db.conn) as session:
+            q = select(User).filter_by(username=user)
+            user = session.execute(q).first()
+            stmt = insert(Vote).values(
+                user_id=user[0].id,
+                room_id=room_id,
+                value=vote
+            )
+            session.execute(stmt)
+            session.commit()
+
     else:
         print("You are not in the target room")
 
 
 def get_votes(db, room_id, user):
     data = get_users_from_room(db, room_id)
-    if user in data[0][0].split("/"):
-        db.cursor.execute(f"SELECT users, votes FROM ROOM WHERE room_id = '{room_id}'")
-        data = db.cursor.fetchall()
-        return [{'username': username, 'value': vote} for username, vote in zip(data[0][1].split("/"),
-                                                                                data[0][1].split("/"))]
+    if data:
+        with Session(db.conn) as session:
+            q = select(Vote.value, Vote.user_id).join(Room.votes).where(Vote.room_id == room_id)
+            data = session.execute(q).all()
+            print([{'username': user, 'value': vote} for vote, user in data])
+            if data:
+                return [{'username': user, 'value': vote} for vote, user in data]
+            else:
+                return [{}]
 
 
 def get_room(db, room_id):
-    db.cursor.execute(f"SELECT room_id, topic, users FROM ROOM WHERE room_id = '{room_id}'")
-    room = db.cursor.fetchall()
-    users = [{'username': user} for user in room[0][2].split("/")]
-    return [{"name": "new", "id": room[0][0], "topic": room[0][1], "users": users}]
+    with Session(db.conn) as session:
+        q = select(Room.users).filter_by(id=room_id)
+        data = session.execute(q).first()
+        return data[0]

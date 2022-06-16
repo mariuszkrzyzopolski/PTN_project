@@ -24,4 +24,4 @@ app = Starlette(debug=True, routes=routes, middleware=middleware)
 
 
 def run_server():
-    uvicorn.run("server:app", host="127.0.0.1", port=5000, log_level="info")
+    uvicorn.run("server:app", host="127.0.0.1", port=6543, log_level="info")
